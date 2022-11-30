@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/admin/work/hh-fcc/hardhat-lottery/contracts/Lottery.sol": {
-      "lastModificationDate": 1669739969177,
-      "contentHash": "89d94d94a510b01bfa4ce1d745cea535",
+      "lastModificationDate": 1669825009965,
+      "contentHash": "60f3f13a5ac3b83c575ca814ecc6663e",
       "sourceName": "contracts/Lottery.sol",
       "solcConfig": {
         "version": "0.8.7",
