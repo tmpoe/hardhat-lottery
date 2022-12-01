@@ -3,12 +3,16 @@ pragma solidity ^0.8.7;
 
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import "@chainlink/contracts/src/v0.8/KeeperCompatibleInterface.sol";
+import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 
 error Lottery__NotEnoughFeeEntered();
 error Lottery__TransferFailed();
 error Lottery__NotOpen();
-error Lottery__UpkeepNotNeeded(uint256 currentBalance, uint256 numberOfPlayers, lotteryState);
+error Lottery__UpkeepNotNeeded(
+    uint256 currentBalance,
+    uint256 numberOfPlayers,
+    uint256 lotteryState
+);
 
 contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     enum LotteryState {
@@ -57,14 +61,14 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
             revert Lottery__NotEnoughFeeEntered();
         }
         if (s_lotteryState != LotteryState.OPEN) {
-            revert Lottery_NotOpen();
+            revert Lottery__NotOpen();
         }
         s_players.push(payable(msg.sender));
         emit LotteryEnter(msg.sender);
     }
 
     function checkUpkeep(
-        bytes calldata /* checkData */
+        bytes memory /* checkData */
     )
         public
         override
@@ -78,8 +82,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
         bool hasPlayers = (s_players.length > 0);
         bool hasBalance = (address(this).balance > 0);
 
-        upkeepNeeded = (isOpen && timePassed && hasPlayers && hasBalance)
-
+        upkeepNeeded = (isOpen && timePassed && hasPlayers && hasBalance);
     }
 
     function performUpkeep(
@@ -89,8 +92,12 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     function requestRandomWinner() external {
         (bool upkeepNeed, ) = checkUpkeep("");
 
-        if(!upkeepNeed) {
-            revert Lottery__UpkeepNotNeeded(address(this).balance, s_players.length, s_lotteryState);
+        if (!upkeepNeed) {
+            revert Lottery__UpkeepNotNeeded(
+                address(this).balance,
+                s_players.length,
+                uint256(s_lotteryState)
+            );
         }
         s_lotteryState = LotteryState.CALCULATING;
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
@@ -130,7 +137,23 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
         return s_players[index];
     }
 
-    function gerRecentWinner() public view returns (address) {
+    function getRecentWinner() public view returns (address) {
         return s_recentWinner;
+    }
+
+    function getLotteryState() public view returns (LotteryState) {
+        return s_lotteryState;
+    }
+
+    function getNumWords() public pure returns (uint256) {
+        return NUM_WORDS;
+    }
+
+    function getLastTimeStamp() public view returns (uint256) {
+        return s_lastTimeStamp;
+    }
+
+    function getInterval() public view returns (uint256) {
+        return i_interval;
     }
 }
