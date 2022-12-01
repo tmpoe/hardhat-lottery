@@ -8,6 +8,7 @@ import "@chainlink/contracts/src/v0.8/KeeperCompatibleInterface.sol";
 error Lottery__NotEnoughFeeEntered();
 error Lottery__TransferFailed();
 error Lottery__NotOpen();
+error Lottery__UpkeepNotNeeded(uint256 currentBalance, uint256 numberOfPlayers, lotteryState);
 
 contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     enum LotteryState {
@@ -26,6 +27,8 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
 
     address payable s_recentWinner;
     LotteryState private s_lotteryState;
+    uint256 private s_lastTimeStamp;
+    uint256 private immutable i_interval;
 
     event LotteryEnter(address indexed player);
     event RequestedLotteryWinner(uint256 indexed requestId);
@@ -36,7 +39,8 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
         uint256 entranceFee,
         bytes32 gasLane,
         uint64 subscriptionId,
-        uint32 callbackGasLimit
+        uint32 callbackGasLimit,
+        uint256 interval
     ) VRFConsumerBaseV2(vrfCoordinatorV2) {
         i_entranceFee = entranceFee;
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
@@ -44,6 +48,8 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
         i_subscriptionId = subscriptionId;
         i_callbackGasLimit = callbackGasLimit;
         s_lotteryState = LotteryState.OPEN;
+        s_lastTimeStamp = block.timestamp;
+        i_interval = interval;
     }
 
     function enterLotter() public payable {
@@ -60,20 +66,32 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
     function checkUpkeep(
         bytes calldata /* checkData */
     )
-        external
-        view
+        public
         override
         returns (
             bool upkeepNeeded,
             bytes memory /* performData */
         )
-    {}
+    {
+        bool isOpen = (s_lotteryState == LotteryState.OPEN);
+        bool timePassed = ((block.timestamp - s_lastTimeStamp) > i_interval);
+        bool hasPlayers = (s_players.length > 0);
+        bool hasBalance = (address(this).balance > 0);
+
+        upkeepNeeded = (isOpen && timePassed && hasPlayers && hasBalance)
+
+    }
 
     function performUpkeep(
         bytes calldata /* performData */
     ) external override {}
 
     function requestRandomWinner() external {
+        (bool upkeepNeed, ) = checkUpkeep("");
+
+        if(!upkeepNeed) {
+            revert Lottery__UpkeepNotNeeded(address(this).balance, s_players.length, s_lotteryState);
+        }
         s_lotteryState = LotteryState.CALCULATING;
         uint256 requestId = i_vrfCoordinator.requestRandomWords(
             i_gasLane,
@@ -95,6 +113,7 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
         s_recentWinner = recentWinner;
         (bool success, ) = recentWinner.call{value: address(this).balance}("");
         s_players = new address payable[](0);
+        s_lastTimeStamp = block.timestamp;
         if (!success) {
             revert Lottery__TransferFailed();
         }
