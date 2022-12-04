@@ -304,8 +304,8 @@
       ]
     },
     "/Users/admin/work/hh-fcc/hardhat-lottery/contracts/test/VRFCoordinatorV2Mock.sol": {
-      "lastModificationDate": 1670147847322,
-      "contentHash": "03744079a668ecb1e486b3ee311c248f",
+      "lastModificationDate": 1670149345499,
+      "contentHash": "b3ca90571e540dc000ea1e02f07d8e43",
       "sourceName": "contracts/test/VRFCoordinatorV2Mock.sol",
       "solcConfig": {
         "version": "0.8.7",
@@ -341,7 +341,7 @@
         "@chainlink/contracts/src/v0.8/mocks/VRFCoordinatorV2Mock.sol"
       ],
       "versionPragmas": [
-        "^0.8.4"
+        "^0.8.0"
       ],
       "artifacts": []
     }

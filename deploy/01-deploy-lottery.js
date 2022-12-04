@@ -1,14 +1,21 @@
-const { networkConfig, developmentChains } = require("../helper-hardhat.config")
+const { networkConfig, developmentChains } = require("../hardhat-helper-config.js")
+const { network, ethers } = require("hardhat")
 const { verify } = require("../utils/verify")
+
+const SUBSCRIPTION_FUND = ethers.utils.parseEther("2")
 
 module.exports = async function ({ getNamedAccounts, deployments }) {
     const { deploy, log } = deployments
     const { deployer } = await getNamedAccounts()
     const chainId = network.config.chainId
-    let vrfCoordinatorAddress
+    let vrfCoordinatorAddress, subscriptionId
     if (developmentChains.includes(network.name)) {
-        const vrfCoordinator = await deployments.get("VRFCoordinatorV2Mock")
-        vrfCoordinatorAddress = vrfCoordinator.address
+        const vrfCoordinatorMock = await ethers.getContract("VRFCoordinatorV2Mock")
+        vrfCoordinatorAddress = vrfCoordinatorMock.address
+        const transactionRespone = await vrfCoordinatorMock.createSubscription()
+        const transactionReceipt = await transactionRespone.wait(1)
+        subscriptionId = transactionReceipt.events[0].args.subId
+        await vrfCoordinatorMock.fundSubscription(subscriptionId, SUBSCRIPTION_FUND)
     } else {
         vrfCoordinatorAddress = networkConfig[chainId].vrfCoordinatorAddress
         subscriptionId = networkConfig[chainId]["subscriptionId"]
@@ -22,7 +29,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
         networkConfig[chainId]["keepersUpdateInterval"],
     ]
 
-    const Lottery = await deployer("Lottery", {
+    const Lottery = await deploy("Lottery", {
         from: deployer,
         args: args,
         log: true,
