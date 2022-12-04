@@ -5,7 +5,7 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/KeeperCompatibleInterface.sol";
 
-error Lottery__NotEnoughFeeEntered();
+error Lottery__NotEnoughFeeForEntry();
 error Lottery__TransferFailed();
 error Lottery__NotOpen();
 error Lottery__UpkeepNotNeeded(
@@ -56,9 +56,9 @@ contract Lottery is VRFConsumerBaseV2, KeeperCompatibleInterface {
         i_interval = interval;
     }
 
-    function enterLotter() public payable {
+    function enterLottery() public payable {
         if (msg.value < i_entranceFee) {
-            revert Lottery__NotEnoughFeeEntered();
+            revert Lottery__NotEnoughFeeForEntry();
         }
         if (s_lotteryState != LotteryState.OPEN) {
             revert Lottery__NotOpen();
