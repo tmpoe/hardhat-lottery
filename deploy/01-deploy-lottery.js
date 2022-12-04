@@ -7,7 +7,8 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     const chainId = network.config.chainId
     let vrfCoordinatorAddress
     if (developmentChains.includes(network.name)) {
-        console.log("Deploying to local network...")
+        const vrfCoordinator = await deployments.get("VRFCoordinatorV2Mock")
+        vrfCoordinatorAddress = vrfCoordinator.address
     } else {
         vrfCoordinatorAddress = networkConfig[chainId].vrfCoordinatorAddress
         subscriptionId = networkConfig[chainId]["subscriptionId"]
