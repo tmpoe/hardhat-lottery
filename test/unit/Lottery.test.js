@@ -1,4 +1,4 @@
-const { getNamedAccounts, deployments, ethers } = require("hardhat")
+const { getNamedAccounts, deployments, ethers, network } = require("hardhat")
 const { developmentChains } = require("../../hardhat-helper-config")
 const constants = require("@openzeppelin/test-helpers")
 const { assert, expect } = require("chai")
@@ -30,8 +30,26 @@ const { assert, expect } = require("chai")
                       "Lottery__NotEnoughFeeForEntry"
                   )
               })
-              it("refuses entrance if lottery is not open", async () => {})
-              it("entrance is allowed under normal circumstances", async () => {})
-              it("event is emitted on entrance", async () => {})
+              xit("refuses entrance if lottery is not open", async () => {
+                  await lottery.enterLottery({ value: lotteryEntranceFee })
+
+                  await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
+                  await network.provider.request({ method: "evm_mine", params: [] })
+                  await lottery.performUpkeep([])
+                  await expect(
+                      lottery.enterLottery({ value: lotteryEntranceFee })
+                  ).to.be.revertedWith("Lottery__NotOpen")
+              })
+              it("entrance is allowed under normal circumstances", async () => {
+                  await lottery.enterLottery({ value: lotteryEntranceFee })
+                  const enteredPlayer = await lottery.getPlayer(0)
+                  assert.equal(player.address, enteredPlayer)
+              })
+              it("event is emitted on entrance", async () => {
+                  await expect(lottery.enterLottery({ value: lotteryEntranceFee })).to.emit(
+                      lottery,
+                      "LotteryEnter"
+                  )
+              })
           })
       })
