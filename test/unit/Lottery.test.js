@@ -78,6 +78,25 @@ const { assert, expect } = require("chai")
                   assert.equal(upkeepNeeded, true)
               })
           })
+          describe("Peform Upkeep", () => {
+              it("emits event if no upkeep needed", async () => {
+                  await expect(lottery.performUpkeep([])).to.be.revertedWith(
+                      "Lottery__UpkeepNotNeeded"
+                  )
+              })
+              it("makes lottery go into not open state and emits event", async () => {
+                  await increaseTimeOnChain(interval.toNumber() + 1)
+                  await lottery.enterLottery({ value: lotteryEntranceFee })
+                  const txResponse = await lottery.performUpkeep([])
+                  const txReceipt = await txResponse.wait(1)
+                  const event = txReceipt.events[1]
+
+                  const lotteryState = await lottery.getLotteryState()
+
+                  assert(event.args.requestId.toNumber() > 0)
+                  assert.equal(lotteryState, 1)
+              })
+          })
       })
 
 async function increaseTimeOnChain(increaseBy) {
