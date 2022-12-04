@@ -1,4 +1,5 @@
 const { networkConfig, developmentChains } = require("../helper-hardhat.config")
+const { verify } = require("../utils/verify")
 
 module.exports = async function ({ getNamedAccounts, deployments }) {
     const { deploy, log } = deployments
@@ -28,7 +29,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     })
 
     if (!developmentChains.includes(network.name) && process.env.ETHERSCAN_API_KEY) {
-        console.log("verify(lottery.address, args)")
+        console.log(verify(lottery.address, args))
     }
 
     log("Deployment done for Lottery!")
