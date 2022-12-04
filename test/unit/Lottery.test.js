@@ -30,7 +30,7 @@ const { assert, expect } = require("chai")
                       "Lottery__NotEnoughFeeForEntry"
                   )
               })
-              xit("refuses entrance if lottery is not open", async () => {
+              it("refuses entrance if lottery is not open", async () => {
                   await lottery.enterLottery({ value: lotteryEntranceFee })
 
                   await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
@@ -51,5 +51,23 @@ const { assert, expect } = require("chai")
                       "LotteryEnter"
                   )
               })
+          })
+
+          describe("Check Upkeep", () => {
+              it("is not necessary to upkeep if no eth has been sent (no players)", async () => {
+                  await network.provider.send("evm_increaseTime", [interval.toNumber() + 1])
+                  await network.provider.request({ method: "evm_mine", params: [] })
+                  const { upkeepNeeded } = await lottery.callStatic.checkUpkeep("0x")
+                  assert.equal(upkeepNeeded, false)
+              })
+              it("is not necessary to upkeep if lottery is not open", async () => {})
+              it("is not necessary to upkeep if not enough time has passed", async () => {
+                  await network.provider.send("evm_increaseTime", [interval.toNumber() - 5])
+                  await network.provider.request({ method: "evm_mine", params: [] })
+                  await lottery.enterLottery({ value: lotteryEntranceFee })
+                  const { upkeepNeeded } = await lottery.callStatic.checkUpkeep("0x")
+                  assert.equal(upkeepNeeded, false)
+              })
+              it("is necessary to upkeep if enough time has passed, there is enoug eth and player and lottery is open", async () => {})
           })
       })
