@@ -117,23 +117,24 @@ const { assert, expect } = require("chai")
                   const startingTimeStamp = await lottery.getLastTimeStamp()
                   await new Promise(async (resolve, reject) => {
                       lotteryContract.once("WinnerPicked", async () => {
+                          console.log("Event fired")
                           try {
                               // Now lets get the ending values...
-                              const recentWinner = await raffle.getRecentWinner()
-                              const raffleState = await raffle.getRaffleState()
+                              const recentWinner = await lottery.getRecentWinner()
+                              const lotteryState = await lottery.getLotteryState()
                               const winnerBalance = await accounts[2].getBalance()
-                              const endingTimeStamp = await raffle.getLastTimeStamp()
-                              await expect(raffle.getPlayer(0)).to.be.reverted
+                              const endingTimeStamp = await lottery.getLastTimeStamp()
+                              await expect(lottery.getPlayer(0)).to.be.reverted
                               // Comparisons to check if our ending values are correct:
                               assert.equal(recentWinner.toString(), accounts[2].address)
-                              assert.equal(raffleState, 0)
+                              assert.equal(lotteryState, 0)
                               assert.equal(
                                   winnerBalance.toString(),
-                                  startingBalance // startingBalance + ( (raffleEntranceFee * additionalEntrances) + raffleEntranceFee )
+                                  startingBalance // startingBalance + ( (lotteryEntranceFee * additionalEntrances) + lotteryEntranceFee )
                                       .add(
-                                          raffleEntranceFee
+                                          lotteryEntranceFee
                                               .mul(additionalEntrances)
-                                              .add(raffleEntranceFee)
+                                              .add(lotteryEntranceFee)
                                       )
                                       .toString()
                               )
@@ -143,15 +144,18 @@ const { assert, expect } = require("chai")
                               reject(e) // if try fails, rejects the promise
                           }
                       })
+                      const tx = await lottery.performUpkeep("0x")
+                      const txReceipt = await tx.wait(1)
+                      const startingBalance = await accounts[2].getBalance()
+                      console.log("Calling fulfill")
+                      console.log(txReceipt.events[1].args.requestId)
+                      console.log(lottery.address)
+                      await vrfCoordinatorV2Mock.fulfillRandomWords(
+                          txReceipt.events[1].args.requestId,
+                          lottery.address
+                      )
+                      console.log("Fulfilled")
                   })
-
-                  const tx = await raffle.performUpkeep("0x")
-                  const txReceipt = await tx.wait(1)
-                  const startingBalance = await accounts[2].getBalance()
-                  await vrfCoordinatorV2Mock.fulfillRandomWords(
-                      txReceipt.events[1].args.requestId,
-                      raffle.address
-                  )
               })
           })
       })
